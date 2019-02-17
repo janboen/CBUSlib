@@ -49,8 +49,9 @@
 	
  History for this file:
 	28/12/15	Pete Brownlow	- Factored out from FLiM module
-        25/2/16     Pete Brownlow   - coding in progress
-        23/5/17     Ian Hogg        - added support for produced events
+    25/2/16     Pete Brownlow   - coding in progress
+    23/5/17     Ian Hogg        - added support for produced events
+ *  15/02/19    Jan Boen        - extended to also handle the 1Track use case
  * 
  * 
  * Currently written for:
@@ -67,6 +68,7 @@
 #include "cbus.h"
 #include "romops.h"
 #include "actionQueue.h"
+
 
 // forward references
 void rebuildHashtable(void);
@@ -806,12 +808,12 @@ BOOL parseCbusEvent(BYTE * msg) {
 } 
  
 /*
- * The CBUS spec uses "EN#" as an index into an "Event Table". This si very implementation
+ * The CBUS spec uses "EN#" as an index into an "Event Table". This is very implementation
  * specific. In this implementation we do actually have an event table behind the scenes
  * so we can have an EN#. However we may also wish to provide some kind of mapping between
  * the CBUS index and out actual implementation specific index. These functions allow us
  * to have a mapping.
- * I currently I just adjust by 1 since the CBUS index starts at 1 whilst the eventTable
+ * Currently I just adjust by 1 since the CBUS index starts at 1 whilst the eventTable
  * index starts at 0.
  */
 /**
@@ -961,12 +963,18 @@ BOOL sendProducedEvent(PRODUCER_ACTION_T paction, BOOL on) {
     ee_write((WORD)(EE_AREQ_STATUS+byte), status);
     
     if (getProducedEvent(paction)) {
+        //Idea is simple, change the EN so it generates a code that will normally not be consumed by one of the other CANMIO
+        //JMRI, or such, will use these events to update displays etc
+        producedEvent.EN = modifyEN(producedEvent.EN);
         return cbusSendEvent( 0, producedEvent.NN, producedEvent.EN, on );
     }
     // Didn't find a provisioned event so now check for programmed default events
     // The default events are application specific so call back into application space
     if (getDefaultProducedEvent(paction)) {
         if (producedEvent.EN != 0)
+            //Idea is simple, change the EN so it generates a code that will normally not be consumed by one of the other CANMIO
+            //JMRI, or such, will use these events to update displays etc
+            producedEvent.EN = modifyEN(producedEvent.EN);
             return cbusSendEvent( 0, producedEvent.NN, producedEvent.EN, on );
         // lie and say we sent it
         return TRUE;

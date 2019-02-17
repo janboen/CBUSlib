@@ -3,6 +3,8 @@
 
 #include "FliM.h"
 #include "module.h"
+#include "eventMods.h"
+
 /*
 
  Copyright (C) Pete Brownlow 2014-2017   software@upsys.co.uk
